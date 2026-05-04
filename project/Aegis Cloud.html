@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Aegis Cloud — Multi-Tenant Azure Management</title>
+<meta name="viewport" content="width=1280">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="data.js"></script>
+</head>
+<body>
+<div id="root"></div>
+<template id="__bundler_thumbnail">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+<rect width="200" height="200" fill="#0b1220"/>
+<path d="M100 50 L140 70 V110 C140 130 122 148 100 156 C78 148 60 130 60 110 V70 Z" fill="none" stroke="#6366f1" stroke-width="6" stroke-linejoin="round"/>
+<path d="M85 102 L97 114 L118 92" fill="none" stroke="#22d3ee" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
+</template>
+
+<script type="text/babel" src="icons.jsx"></script>
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+<script type="text/babel" src="shell.jsx"></script>
+<script type="text/babel" src="page-overview.jsx"></script>
+<script type="text/babel" src="page-tenants.jsx"></script>
+<script type="text/babel" src="page-policies.jsx"></script>
+<script type="text/babel" src="page-bicep.jsx"></script>
+<script type="text/babel" src="page-misc.jsx"></script>
+<script type="text/babel" src="page-extras.jsx"></script>
+
+<script type="text/babel">
+const { useState, useEffect } = React;
+
+const App = () => {
+  const [page, setPage] = useState('home');
+  const [tenant, setTenant] = useState('ALL');
+
+  // Pages that scope to a single tenant only
+  const allOption = !['tenant'].includes(page);
+
+  useEffect(() => {
+    if (page === 'tenant' && tenant === 'ALL') {
+      setTenant(window.AegisData.TENANTS[0].id);
+    }
+  }, [page]);
+
+  const renderPage = () => {
+    switch (page) {
+      case 'home':     return <OverviewPage setPage={setPage} setTenant={setTenant} />;
+      case 'tenants':  return <TenantsListPage setPage={setPage} setTenant={setTenant} />;
+      case 'tenant':   return <TenantDetailPage tenantId={tenant} setPage={setPage} />;
+      case 'policies': return <PoliciesPage setPage={setPage} />;
+      case 'savings':  return <SavingsPage />;
+      case 'bicep':    return <BicepPage />;
+      case 'alerts':   return <AlertsPage />;
+      case 'reports':  return <ReportsPage />;
+      case 'billing':  return <BillingPage />;
+      case 'audit':    return <AuditPage />;
+      case 'rbac':     return <RbacPage />;
+      case 'portal':   return <PortalPage />;
+      case 'mobile':   return <MobilePage />;
+      case 'settings': return <SettingsPage />;
+      default:         return <OverviewPage setPage={setPage} setTenant={setTenant} />;
+    }
+  };
+
+  return (
+    <div className="app" data-screen-label={'Aegis · ' + page}>
+      <Sidebar page={page} setPage={setPage} />
+      <Topbar tenant={tenant} setTenant={setTenant} page={page} allOption={allOption} />
+      <div className="main">
+        {renderPage()}
+      </div>
+    </div>
+  );
+};
+
+const SettingsStub = () => (
+  <div className="page">
+    <div className="page-header">
+      <div><h1 className="page-title">Settings</h1><p className="page-sub">Workspace, integrations, identity providers</p></div>
+    </div>
+    <div className="empty">
+      <Icon name="settings" size={28} />
+      <p style={{marginTop:8}}>Settings live here. The other pages are where the action is — try Overview, Bicep, or Savings.</p>
+    </div>
+  </div>
+);
+
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <ThemeProvider>
+    <ToastProvider>
+      <App />
+    </ToastProvider>
+  </ThemeProvider>
+);
+</script>
+</body>
+</html>
