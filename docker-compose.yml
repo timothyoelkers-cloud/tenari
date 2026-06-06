@@ -1,27 +1,7 @@
 services:
-  # Production-only: only starts with `docker compose --profile prod up`
-  # For local dev just run: npm run dev
-  app:
-    profiles: ["prod"]
-    build:
-      context: .
-      dockerfile: Dockerfile
-    ports:
-      - "4000:4000"
-    environment:
-      - DATABASE_URL=postgresql://tenari:tenari@postgres:5432/tenari
-      - REDIS_URL=redis://redis:6379
-      - STORAGE_ENDPOINT=http://minio:9000
-      - STORAGE_ACCESS_KEY=minioadmin
-      - STORAGE_SECRET_KEY=minioadmin
-      - STORAGE_BUCKET=tenari
-    env_file:
-      - .env.local
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+  # ── Dev infrastructure ────────────────────────────────────────────────────
+  # Run with: docker compose up -d
+  # These are the only services needed for local development.
 
   postgres:
     image: postgres:16-alpine
@@ -51,28 +31,47 @@ services:
       timeout: 5s
       retries: 5
 
+  mailhog:
+    image: mailhog/mailhog:latest
+    platform: linux/amd64
+    ports:
+      - "1025:1025"   # SMTP
+      - "8025:8025"   # Web UI → http://localhost:8025
+
+  # ── Storage (optional — only needed for PDF report generation) ───────────
+  # Start with: docker compose --profile storage up -d
   minio:
-    image: minio/minio:latest
+    profiles: ["storage"]
+    image: quay.io/minio/minio:latest
+    platform: linux/arm64
     command: server /data --console-address ":9001"
     ports:
       - "9000:9000"
-      - "9001:9001"
+      - "9001:9001"   # Console → http://localhost:9001
     environment:
       MINIO_ROOT_USER: minioadmin
       MINIO_ROOT_PASSWORD: minioadmin
     volumes:
       - minio_data:/data
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
-      interval: 30s
-      timeout: 20s
-      retries: 3
 
-  mailhog:
-    image: mailhog/mailhog:latest
+  # ── Production app (not used in dev — run npm run dev instead) ───────────
+  app:
+    profiles: ["prod"]
+    build:
+      context: .
+      dockerfile: Dockerfile
     ports:
-      - "1025:1025"
-      - "8025:8025"
+      - "4000:4000"
+    env_file:
+      - .env.local
+    environment:
+      - DATABASE_URL=postgresql://tenari:tenari@postgres:5432/tenari
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
 volumes:
   postgres_data:
